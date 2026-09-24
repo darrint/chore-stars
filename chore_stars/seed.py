@@ -7,10 +7,11 @@ TEMPLATES = [
     ("sweep-north", "Sweep north", 1, 1, "day"),
     ("sweep-south", "Sweep south", 1, 1, "day"),
     ("vacuum-rugs", "Vacuum rugs", 2, 1, "day"),
-    ("load-laundry", "Load laundry", 1, 4, "day"),
-    ("sort-laundry", "Sort and distribute clean laundry", 2, 1, "day"),
-    ("mow-lawn", "Mow lawn", 8, 1, "week"),
-    ("edge-prune-blow", "Edge, prune, blow", 8, 1, "week"),
+    ("load-laundry", "Load laundry", 1, 2, "day"),
+    ("sort-laundry", "Sort and distribute clean laundry", 4, 1, "day"),
+    ("mow-lawn", "Mow lawn", 7, 1, "week"),
+    ("edge-prune-blow", "Edge, prune, blow", 6, 1, "week"),
+    ("burn-boxes", "Burn boxes", 3, 1, "week"),
 ]
 
 
@@ -46,17 +47,23 @@ def seed_templates(db: Session) -> None:
                 )
             )
             continue
-        changed = template.default_stars != stars
+        old_stars = template.default_stars
+        old_cap = template.cap
         template.title = title
         template.default_stars = stars
         template.cap = cap
         template.period = period
-        if changed:
-            for slot in db.query(ChoreSlot).filter(
-                ChoreSlot.template_id == template.id,
-                ChoreSlot.status == "open",
-            ):
+        open_slots = db.query(ChoreSlot).filter(
+            ChoreSlot.template_id == template.id,
+            ChoreSlot.status == "open",
+        )
+        if old_stars != stars:
+            for slot in open_slots:
                 slot.advertised_stars = stars
+        if old_cap > cap:
+            for slot in open_slots:
+                if slot.sequence > cap:
+                    db.delete(slot)
     db.flush()
 
 
