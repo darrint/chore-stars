@@ -139,6 +139,26 @@ def ungrab(db: Session, grab: Grab) -> None:
     db.flush()
 
 
+def backfill_wall_posts(db: Session, settings: Settings) -> int:
+    existing = set(db.execute(select(WallPost.grab_id)).scalars().all())
+    created = 0
+    grabs = db.execute(select(Grab).where(Grab.status == "awarded")).scalars()
+    for grab in grabs:
+        if grab.id in existing:
+            continue
+        db.add(
+            WallPost(
+                grab_id=grab.id,
+                user_id=grab.user_id,
+                published_at=grab.submitted_at or grab.grabbed_at,
+            )
+        )
+        created += 1
+    if created:
+        db.flush()
+    return created
+
+
 def live_grabs(db: Session) -> list[Grab]:
     return list(
         db.execute(

@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from chore_stars.models import ChoreSlot, Grab, User, Week
+from chore_stars.models import ChoreSlot, Grab, User, WallPost, Week
 from tests.conftest import jpeg_bytes, login, user_named
 
 
@@ -83,6 +83,30 @@ def test_wall_shows_grab_and_parent_ungrab(client, app):
         grab = db.get(Grab, grab_id)
         assert grab.status == "released"
         assert grab.slot.status == "open"
+
+
+def test_wall_backfills_missing_posts(client, app):
+    login(client, app, "Alex")
+    with Session(app.state.engine) as db:
+        slot = db.execute(select(ChoreSlot).where(ChoreSlot.status == "open")).scalars().first()
+        slot_id = slot.id
+    grab_url = client.post(f"/slots/{slot_id}/grab", follow_redirects=False).headers["location"]
+    grab_id = int(grab_url.rsplit("/", 1)[-1])
+    for kind in ("before", "after"):
+        client.post(
+            f"/grabs/{grab_id}/photo",
+            data={"kind": kind},
+            files={"photo": ("p.jpg", jpeg_bytes(), "image/jpeg")},
+            follow_redirects=False,
+        )
+    client.post(f"/grabs/{grab_id}/submit", follow_redirects=False)
+    login(client, app, "Dad")
+    client.post(f"/parent/review/{grab_id}", data={"action": "award", "stars": "3", "note": ""}, follow_redirects=False)
+    with Session(app.state.engine) as db:
+        db.query(WallPost).delete()
+        db.commit()
+    wall = client.get("/wall")
+    assert "Alex" in wall.text
 
 
 def test_parents_only(client, app):

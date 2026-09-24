@@ -36,6 +36,7 @@ from chore_stars.seed import seed_dev_users, seed_templates
 from chore_stars.services import (
     active_grab,
     adjust_pool,
+    backfill_wall_posts,
     claim_stars,
     finished_counts,
     grab_slot,
@@ -73,6 +74,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if settings.dev_auth:
             seed_dev_users(db)
         open_slots(db, settings)
+        backfill_wall_posts(db, settings)
         db.commit()
 
     oauth = build_oauth(settings)
@@ -372,6 +374,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/wall", response_class=HTMLResponse)
     def wall(request: Request, db: Session = Depends(get_db)):
         user = need_user(request, db)
+        backfill_wall_posts(db, settings)
         posts_q = (
             select(WallPost)
             .options(
@@ -425,6 +428,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def kiosk(request: Request, db: Session = Depends(get_db)):
         user = need_user(request, db)
         week = ensure_week(db, settings)
+        backfill_wall_posts(db, settings)
         slots, _ = board_slots(db, week, None)
         posts = (
             db.execute(
