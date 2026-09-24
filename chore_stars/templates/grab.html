@@ -13,10 +13,23 @@
       <div class="empty">—</div>
       {% endif %}
       {% if grab.status == 'active' and not grab.submitted_at %}
-      <form method="post" action="/grabs/{{ grab.id }}/photo" enctype="multipart/form-data">
+      <form class="shot" method="post" action="/grabs/{{ grab.id }}/photo" enctype="multipart/form-data">
         <input type="hidden" name="kind" value="before">
-        <input required type="file" name="photo" accept="image/*" capture="environment">
-        <button class="btn" type="submit">Save before</button>
+        <img class="pick" alt="" hidden>
+        <p class="muted">Pick a photo first. Save appears after.</p>
+        <div class="shot-actions">
+          <label class="btn file-btn">Take photo
+            <input type="file" accept="image/*" capture="environment" data-pick>
+          </label>
+          <label class="btn ghost file-btn">Choose photo
+            <input type="file" accept="image/*" data-pick>
+          </label>
+          <button class="btn ghost" type="button" data-camera>Open camera</button>
+        </div>
+        <video hidden playsinline autoplay muted></video>
+        <button class="btn" type="button" data-snap hidden>Use this shot</button>
+        <button class="btn gold" type="submit" data-save hidden>Save before</button>
+        <p class="muted shot-note" hidden></p>
       </form>
       {% endif %}
     </figure>
@@ -28,10 +41,23 @@
       <div class="empty">—</div>
       {% endif %}
       {% if grab.status == 'active' and not grab.submitted_at %}
-      <form method="post" action="/grabs/{{ grab.id }}/photo" enctype="multipart/form-data">
+      <form class="shot" method="post" action="/grabs/{{ grab.id }}/photo" enctype="multipart/form-data">
         <input type="hidden" name="kind" value="after">
-        <input required type="file" name="photo" accept="image/*" capture="environment">
-        <button class="btn" type="submit">Save after</button>
+        <img class="pick" alt="" hidden>
+        <p class="muted">Pick a photo first. Save appears after.</p>
+        <div class="shot-actions">
+          <label class="btn file-btn">Take photo
+            <input type="file" accept="image/*" capture="environment" data-pick>
+          </label>
+          <label class="btn ghost file-btn">Choose photo
+            <input type="file" accept="image/*" data-pick>
+          </label>
+          <button class="btn ghost" type="button" data-camera>Open camera</button>
+        </div>
+        <video hidden playsinline autoplay muted></video>
+        <button class="btn" type="button" data-snap hidden>Use this shot</button>
+        <button class="btn gold" type="submit" data-save hidden>Save after</button>
+        <p class="muted shot-note" hidden></p>
       </form>
       {% endif %}
     </figure>
@@ -47,4 +73,91 @@
   <p class="muted">Waiting on parent review.</p>
   {% endif %}
 </section>
+{% endblock %}
+{% block scripts %}
+<script>
+for (const form of document.querySelectorAll("form.shot")) {
+  const save = form.querySelector("[data-save]");
+  const preview = form.querySelector("img.pick");
+  const note = form.querySelector(".shot-note");
+  const video = form.querySelector("video");
+  const snap = form.querySelector("[data-snap]");
+  let stream = null;
+
+  function stopCam() {
+    if (!stream) return;
+    for (const track of stream.getTracks()) track.stop();
+    stream = null;
+    video.srcObject = null;
+    video.hidden = true;
+    snap.hidden = true;
+  }
+
+  function arm(file, input) {
+    for (const other of form.querySelectorAll("[data-pick], [data-slot]")) {
+      if (other === input) continue;
+      other.removeAttribute("name");
+      other.value = "";
+    }
+    input.name = "photo";
+    if (preview.src) URL.revokeObjectURL(preview.src);
+    preview.src = URL.createObjectURL(file);
+    preview.hidden = false;
+    save.hidden = false;
+    note.hidden = true;
+    stopCam();
+  }
+
+  for (const input of form.querySelectorAll("[data-pick]")) {
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      if (file) arm(file, input);
+    });
+  }
+
+  form.querySelector("[data-camera]").addEventListener("click", async () => {
+    note.hidden = true;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      note.textContent = "No in-page camera. Use Take photo or Choose photo.";
+      note.hidden = false;
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+      video.srcObject = stream;
+      video.hidden = false;
+      snap.hidden = false;
+    } catch (err) {
+      note.textContent = "Camera did not open. Try Take photo or Choose photo.";
+      note.hidden = false;
+    }
+  });
+
+  snap.addEventListener("click", () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], "camera.jpg", { type: "image/jpeg" });
+      let slot = form.querySelector("[data-slot]");
+      if (!slot) {
+        slot = document.createElement("input");
+        slot.type = "file";
+        slot.hidden = true;
+        slot.dataset.slot = "";
+        form.appendChild(slot);
+      }
+      const data = new DataTransfer();
+      data.items.add(file);
+      slot.files = data.files;
+      arm(file, slot);
+    }, "image/jpeg", 0.85);
+  });
+}
+</script>
 {% endblock %}

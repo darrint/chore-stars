@@ -91,6 +91,11 @@ def test_wall_backfills_missing_posts(client, app):
         slot = db.execute(select(ChoreSlot).where(ChoreSlot.status == "open")).scalars().first()
         slot_id = slot.id
     grab_url = client.post(f"/slots/{slot_id}/grab", follow_redirects=False).headers["location"]
+    page = client.get(grab_url)
+    assert "Take photo" in page.text
+    assert "Choose photo" in page.text
+    assert "Open camera" in page.text
+    assert 'data-save' in page.text and "hidden" in page.text
     grab_id = int(grab_url.rsplit("/", 1)[-1])
     for kind in ("before", "after"):
         client.post(

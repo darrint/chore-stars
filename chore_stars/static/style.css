@@ -66,6 +66,12 @@ input, select {
 }
 .dock a { color: var(--ink); font-weight: 650; font-size: .9rem; }
 .photos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.shot-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.shot-actions .btn, .shot [data-save], .shot [data-snap] { text-align: center; width: 100%; box-sizing: border-box; margin-top: 8px; }
+.shot-actions .btn { margin-top: 0; }
+.file-btn { position: relative; overflow: hidden; }
+.file-btn input { position: absolute; inset: 0; opacity: 0; font-size: 16px; cursor: pointer; }
+.shot video, .shot img.pick { width: 100%; border-radius: 12px; margin-top: 8px; background: #111; }
 .photos img, .empty { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; background: #111; }
 .wall { display: grid; gap: 12px; }
 .post { display: grid; grid-template-columns: 96px 96px 1fr; gap: 12px; align-items: center; }
