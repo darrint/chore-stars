@@ -61,6 +61,30 @@ def test_one_active_grab_and_award_claim_owe(client, app):
     assert "Alex" in wall.text
 
 
+def test_wall_shows_grab_and_parent_ungrab(client, app):
+    login(client, app, "Alex")
+    with Session(app.state.engine) as db:
+        slot = db.execute(select(ChoreSlot).where(ChoreSlot.status == "open")).scalars().first()
+        slot_id = slot.id
+    client.post(f"/slots/{slot_id}/grab", follow_redirects=False)
+    wall = client.get("/wall")
+    assert "Alex" in wall.text
+    assert "grabbed" in wall.text
+
+    login(client, app, "Dad")
+    parent = client.get("/parent")
+    assert "Ungrab" in parent.text
+    with Session(app.state.engine) as db:
+        grab = db.execute(select(Grab).where(Grab.status == "active")).scalar_one()
+        grab_id = grab.id
+    gone = client.post(f"/parent/grabs/{grab_id}/ungrab", follow_redirects=False)
+    assert gone.status_code == 303
+    with Session(app.state.engine) as db:
+        grab = db.get(Grab, grab_id)
+        assert grab.status == "released"
+        assert grab.slot.status == "open"
+
+
 def test_parents_only(client, app):
     login(client, app, "Alex")
     denied = client.get("/parent", follow_redirects=False)

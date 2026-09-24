@@ -3,20 +3,48 @@
 {% block content %}
 <h1>Wall</h1>
 <div class="wall">
+  {% for grab in live %}
+  <article class="post live">
+    {% if grab.proofs | selectattr('kind', 'equalto', 'before') | list %}
+    <img src="/photos/{{ grab.id }}/before?thumb=1" alt="Before">
+    {% else %}
+    <div class="empty">before</div>
+    {% endif %}
+    {% if grab.proofs | selectattr('kind', 'equalto', 'after') | list %}
+    <img src="/photos/{{ grab.id }}/after?thumb=1" alt="After">
+    {% else %}
+    <div class="empty">after</div>
+    {% endif %}
+    <div>
+      <h2>{{ grab.user.name }}</h2>
+      <p>{{ grab.slot.template.title }} · {{ grab.locked_stars }}★</p>
+      <span class="chip grabbed">{{ grab.slot.status }}</span>
+      {% if user and user.role == 'parent' %}
+      <form method="post" action="/parent/grabs/{{ grab.id }}/ungrab"><button class="text" type="submit">Ungrab</button></form>
+      {% endif %}
+    </div>
+  </article>
+  {% endfor %}
   {% for post in posts %}
-  <article class="post">
-    <img src="/photos/{{ post.grab_id }}/after?thumb=1" alt="">
+  <article class="post{% if post.hidden_at %} hidden{% endif %}">
+    <img src="/photos/{{ post.grab_id }}/before?thumb=1" alt="Before">
+    <img src="/photos/{{ post.grab_id }}/after?thumb=1" alt="After">
     <div>
       <h2>{{ post.user.name }}</h2>
       <p>{{ post.grab.slot.template.title }} · {{ post.grab.locked_stars }}★</p>
       <span class="chip {{ standings.get(post.user_id, 'quiet') }}">{{ standings.get(post.user_id, 'quiet') }}</span>
       {% if user and user.role == 'parent' %}
-      <form method="post" action="/parent/wall/{{ post.id }}/hide"><button class="text" type="submit">Hide</button></form>
+        {% if post.hidden_at %}
+        <form method="post" action="/parent/wall/{{ post.id }}/unhide"><button class="text" type="submit">Unhide</button></form>
+        {% else %}
+        <form method="post" action="/parent/wall/{{ post.id }}/hide"><button class="text" type="submit">Hide</button></form>
+        {% endif %}
       {% endif %}
     </div>
   </article>
-  {% else %}
-  <p class="muted">Nothing on the wall yet.</p>
   {% endfor %}
+  {% if not live and not posts %}
+  <p class="muted">Nothing on the wall yet.</p>
+  {% endif %}
 </div>
 {% endblock %}

@@ -2,7 +2,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from chore_stars.config import Settings
 from chore_stars.jobs import ensure_week, mark_present, recalc_week_pool
@@ -127,6 +127,32 @@ def release_grab(db: Session, grab: Grab) -> None:
     if grab.slot.status == "grabbed":
         grab.slot.status = "open"
     db.flush()
+
+
+def ungrab(db: Session, grab: Grab) -> None:
+    if grab.status != "active":
+        raise ValueError("Not an active grab.")
+    grab.status = "released"
+    grab.submitted_at = None
+    if grab.slot.status in ("grabbed", "submitted"):
+        grab.slot.status = "open"
+    db.flush()
+
+
+def live_grabs(db: Session) -> list[Grab]:
+    return list(
+        db.execute(
+            select(Grab)
+            .options(
+                selectinload(Grab.user),
+                selectinload(Grab.slot).selectinload(ChoreSlot.template),
+                selectinload(Grab.proofs),
+            )
+            .join(ChoreSlot)
+            .where(Grab.status == "active", ChoreSlot.status.in_(("grabbed", "submitted")))
+            .order_by(Grab.grabbed_at.desc())
+        ).scalars()
+    )
 
 
 def review_grab(

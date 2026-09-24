@@ -17,9 +17,28 @@
   <section>
     <h1>Wall</h1>
     <div class="wall">
+      {% for grab in live %}
+      <article class="post live">
+        {% if grab.proofs | selectattr('kind', 'equalto', 'before') | list %}
+        <img src="/photos/{{ grab.id }}/before?thumb=1" alt="Before">
+        {% else %}
+        <div class="empty">before</div>
+        {% endif %}
+        {% if grab.proofs | selectattr('kind', 'equalto', 'after') | list %}
+        <img src="/photos/{{ grab.id }}/after?thumb=1" alt="After">
+        {% else %}
+        <div class="empty">after</div>
+        {% endif %}
+        <div>
+          <h2>{{ grab.user.name }}</h2>
+          <p>{{ grab.slot.template.title }} · {{ grab.slot.status }}</p>
+        </div>
+      </article>
+      {% endfor %}
       {% for post in posts %}
       <article class="post">
-        <img src="/photos/{{ post.grab_id }}/after?thumb=1" alt="">
+        <img src="/photos/{{ post.grab_id }}/before?thumb=1" alt="Before">
+        <img src="/photos/{{ post.grab_id }}/after?thumb=1" alt="After">
         <div>
           <h2>{{ post.user.name }}</h2>
           <p>{{ post.grab.slot.template.title }}</p>

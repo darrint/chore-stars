@@ -40,6 +40,7 @@ from chore_stars.services import (
     finished_counts,
     grab_slot,
     leaderboard,
+    live_grabs,
     proof_of,
     release_grab,
     review_grab,
@@ -47,6 +48,7 @@ from chore_stars.services import (
     stars_summary,
     store_proof,
     submit_grab,
+    ungrab,
 )
 from chore_stars.timeutil import local_today, now_tz, week_end
 
@@ -333,10 +335,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         grab = db.get(Grab, grab_id)
         if grab is None:
             raise HTTPException(status_code=404)
-        if user.role == "resident" and grab.user_id != user.id and kind == "before":
-            raise HTTPException(status_code=403)
-        if user.role == "kiosk" and kind == "before":
-            raise HTTPException(status_code=403)
         proof = proof_of(grab, kind)
         if proof is None:
             raise HTTPException(status_code=404)
@@ -373,24 +371,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/wall", response_class=HTMLResponse)
     def wall(request: Request, db: Session = Depends(get_db)):
-        need_user(request, db)
-        posts = (
-            db.execute(
-                select(WallPost)
-                .options(selectinload(WallPost.user), selectinload(WallPost.grab).selectinload(Grab.slot).selectinload(ChoreSlot.template))
-                .where(WallPost.hidden_at.is_(None))
-                .order_by(WallPost.published_at.desc())
-                .limit(60)
+        user = need_user(request, db)
+        posts_q = (
+            select(WallPost)
+            .options(
+                selectinload(WallPost.user),
+                selectinload(WallPost.grab).selectinload(Grab.slot).selectinload(ChoreSlot.template),
+                selectinload(WallPost.grab).selectinload(Grab.proofs),
             )
-            .scalars()
-            .all()
+            .order_by(WallPost.published_at.desc())
+            .limit(60)
         )
+        if user.role != "parent":
+            posts_q = posts_q.where(WallPost.hidden_at.is_(None))
+        posts = db.execute(posts_q).scalars().all()
         week = ensure_week(db, settings)
         standings = {
             s.user_id: s.status
             for s in db.execute(select(Standing).where(Standing.week_id == week.id)).scalars()
         }
-        return templates.TemplateResponse(request, "wall.html", ctx(request, db, posts=posts, standings=standings))
+        return templates.TemplateResponse(
+            request, "wall.html", ctx(request, db, posts=posts, live=live_grabs(db), standings=standings)
+        )
 
     @app.get("/boards", response_class=HTMLResponse)
     def boards(request: Request, db: Session = Depends(get_db)):
@@ -427,7 +429,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         posts = (
             db.execute(
                 select(WallPost)
-                .options(selectinload(WallPost.user), selectinload(WallPost.grab).selectinload(Grab.slot).selectinload(ChoreSlot.template))
+                .options(
+                    selectinload(WallPost.user),
+                    selectinload(WallPost.grab).selectinload(Grab.slot).selectinload(ChoreSlot.template),
+                    selectinload(WallPost.grab).selectinload(Grab.proofs),
+                )
                 .where(WallPost.hidden_at.is_(None))
                 .order_by(WallPost.published_at.desc())
                 .limit(12)
@@ -439,7 +445,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             db.execute(select(Standing).options(selectinload(Standing.user)).where(Standing.week_id == week.id)).scalars()
         )
         return templates.TemplateResponse(
-            request, "kiosk.html", ctx(request, db, slots=slots, posts=posts, standings=standings, kiosk=user)
+            request,
+            "kiosk.html",
+            ctx(request, db, slots=slots, posts=posts, live=live_grabs(db), standings=standings, kiosk=user),
         )
 
     @app.get("/parent", response_class=HTMLResponse)
@@ -480,11 +488,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 request,
                 db,
                 pending=pending,
+                live=live_grabs(db),
                 standings=standings,
                 open_slots_list=open_slots_list,
                 residents=residents,
             ),
         )
+
+    @app.post("/parent/grabs/{grab_id}/ungrab")
+    def parent_ungrab(grab_id: int, request: Request, db: Session = Depends(get_db)):
+        user = need_user(request, db)
+        if user.role != "parent":
+            raise HTTPException(status_code=403)
+        grab = db.get(Grab, grab_id)
+        if grab is None:
+            raise HTTPException(status_code=404)
+        try:
+            ungrab(db, grab)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return RedirectResponse("/wall", status_code=303)
 
     @app.get("/parent/review/{grab_id}", response_class=HTMLResponse)
     def parent_review(grab_id: int, request: Request, db: Session = Depends(get_db)):
@@ -595,6 +618,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         post = db.get(WallPost, post_id)
         if post:
             post.hidden_at = now_tz(settings.timezone)
+        return RedirectResponse("/wall", status_code=303)
+
+    @app.post("/parent/wall/{post_id}/unhide")
+    def unhide_wall(post_id: int, request: Request, db: Session = Depends(get_db)):
+        user = need_user(request, db)
+        if user.role != "parent":
+            raise HTTPException(status_code=403)
+        post = db.get(WallPost, post_id)
+        if post:
+            post.hidden_at = None
         return RedirectResponse("/wall", status_code=303)
 
     @app.post("/parent/pair")

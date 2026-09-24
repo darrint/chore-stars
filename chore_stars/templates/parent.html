@@ -8,6 +8,20 @@
 </p>
 
 <section>
+  <h2>Live grabs</h2>
+  {% for grab in live %}
+  <div class="row card">
+    <span><strong>{{ grab.user.name }}</strong> · {{ grab.slot.template.title }} · {{ grab.slot.status }}</span>
+    <form method="post" action="/parent/grabs/{{ grab.id }}/ungrab">
+      <button class="btn ghost" type="submit">Ungrab</button>
+    </form>
+  </div>
+  {% else %}
+  <p class="muted">Nobody is holding a slot.</p>
+  {% endfor %}
+</section>
+
+<section>
   <h2>Review stream</h2>
   {% for grab in pending %}
   <a class="row card" href="/parent/review/{{ grab.id }}">
