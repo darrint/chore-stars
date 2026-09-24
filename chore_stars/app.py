@@ -622,21 +622,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         import qrcode
         import qrcode.image.svg
 
-        templates_list = db.execute(select(ChoreTemplate).where(ChoreTemplate.active.is_(True))).scalars().all()
-        codes = []
-        factory_img = qrcode.image.svg.SvgPathImage
-        for tmpl in templates_list:
-            url = settings.base_url.rstrip("/") + "/c/" + tmpl.slug
-            img = qrcode.make(url, image_factory=factory_img)
-            buf = io.BytesIO()
-            img.save(buf)
-            codes.append({"title": tmpl.title, "url": url, "svg": buf.getvalue().decode("utf-8")})
         board_url = settings.base_url.rstrip("/") + "/board"
-        img = qrcode.make(board_url, image_factory=factory_img)
+        img = qrcode.make(board_url, image_factory=qrcode.image.svg.SvgPathImage)
         buf = io.BytesIO()
         img.save(buf)
-        codes.insert(0, {"title": "Board", "url": board_url, "svg": buf.getvalue().decode("utf-8")})
-        return templates.TemplateResponse(request, "qr.html", ctx(request, db, codes=codes))
+        return templates.TemplateResponse(
+            request, "qr.html", ctx(request, db, url=board_url, svg=buf.getvalue().decode("utf-8"))
+        )
 
     @app.get("/manifest.json")
     def manifest():
