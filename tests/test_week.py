@@ -1,6 +1,11 @@
 from datetime import date, datetime
 
+from chore_stars.seed import week_advertised_capacity
 from chore_stars.timeutil import infraction_cutoff, quiet_cutoff, week_start
+
+
+def test_full_week_advertised_is_100():
+    assert week_advertised_capacity() == 100
 
 
 def test_thursday_is_start():

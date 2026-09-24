@@ -1,17 +1,24 @@
 from sqlalchemy.orm import Session
 
-from chore_stars.models import ChoreTemplate, User
+from chore_stars.models import ChoreSlot, ChoreTemplate, User
 
 TEMPLATES = [
-    ("load-dishwasher", "Load dishwasher", 3, 2, "day"),
-    ("sweep-north", "Sweep north", 4, 1, "day"),
-    ("sweep-south", "Sweep south", 4, 1, "day"),
-    ("vacuum-rugs", "Vacuum rugs", 5, 1, "day"),
-    ("load-laundry", "Load laundry", 3, 4, "day"),
-    ("sort-laundry", "Sort and distribute clean laundry", 8, 1, "day"),
-    ("mow-lawn", "Mow lawn", 12, 1, "week"),
-    ("edge-prune-blow", "Edge, prune, blow", 15, 1, "week"),
+    ("load-dishwasher", "Load dishwasher", 1, 2, "day"),
+    ("sweep-north", "Sweep north", 1, 1, "day"),
+    ("sweep-south", "Sweep south", 1, 1, "day"),
+    ("vacuum-rugs", "Vacuum rugs", 2, 1, "day"),
+    ("load-laundry", "Load laundry", 1, 4, "day"),
+    ("sort-laundry", "Sort and distribute clean laundry", 2, 1, "day"),
+    ("mow-lawn", "Mow lawn", 8, 1, "week"),
+    ("edge-prune-blow", "Edge, prune, blow", 8, 1, "week"),
 ]
+
+
+def week_advertised_capacity() -> int:
+    total = 0
+    for _slug, _title, stars, cap, period in TEMPLATES:
+        total += stars * cap * (7 if period == "day" else 1)
+    return total
 
 DEV_USERS = [
     ("dad", "Dad", "parent"),
@@ -24,9 +31,10 @@ DEV_USERS = [
 
 
 def seed_templates(db: Session) -> None:
-    existing = {t.slug for t in db.query(ChoreTemplate).all()}
+    by_slug = {t.slug: t for t in db.query(ChoreTemplate).all()}
     for slug, title, stars, cap, period in TEMPLATES:
-        if slug not in existing:
+        template = by_slug.get(slug)
+        if template is None:
             db.add(
                 ChoreTemplate(
                     slug=slug,
@@ -37,6 +45,18 @@ def seed_templates(db: Session) -> None:
                     active=True,
                 )
             )
+            continue
+        changed = template.default_stars != stars
+        template.title = title
+        template.default_stars = stars
+        template.cap = cap
+        template.period = period
+        if changed:
+            for slot in db.query(ChoreSlot).filter(
+                ChoreSlot.template_id == template.id,
+                ChoreSlot.status == "open",
+            ):
+                slot.advertised_stars = stars
     db.flush()
 
 
