@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Review{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>{{ grab.user.name }} · {{ grab.slot.template.title }}</h1>
+  <p class="lede">Grab locked {{ grab.locked_stars }}★. Award can go higher or lower.</p>
+  <div class="photos">
+    <figure>
+      <figcaption>Before</figcaption>
+      {% if before %}<img src="/photos/{{ grab.id }}/before" alt="Before">{% endif %}
+    </figure>
+    <figure>
+      <figcaption>After</figcaption>
+      {% if after %}<img src="/photos/{{ grab.id }}/after" alt="After">{% endif %}
+    </figure>
+  </div>
+  <form method="post" action="/parent/review/{{ grab.id }}">
+    <label>Stars <input type="number" name="stars" value="{{ grab.locked_stars }}" min="0"></label>
+    <label>Note <input type="text" name="note"></label>
+    <div class="row">
+      <button class="btn gold" name="action" value="award" type="submit">Award</button>
+      <button class="btn" name="action" value="send_back" type="submit">Send back</button>
+      <button class="btn ghost" name="action" value="reject" type="submit">Reject</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

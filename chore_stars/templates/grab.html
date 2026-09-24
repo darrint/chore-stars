@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Grab · {{ grab.slot.template.title }}{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>{{ grab.slot.template.title }}</h1>
+  <p class="lede">Locked {{ grab.locked_stars }}★ · <span data-countdown="{{ grab.expires_at.isoformat() }}"></span></p>
+  <div class="photos">
+    <figure>
+      <figcaption>Before</figcaption>
+      {% if before %}
+      <img src="/photos/{{ grab.id }}/before?thumb=1" alt="Before">
+      {% else %}
+      <div class="empty">—</div>
+      {% endif %}
+      {% if grab.status == 'active' and not grab.submitted_at %}
+      <form method="post" action="/grabs/{{ grab.id }}/photo" enctype="multipart/form-data">
+        <input type="hidden" name="kind" value="before">
+        <input required type="file" name="photo" accept="image/*" capture="environment">
+        <button class="btn" type="submit">Save before</button>
+      </form>
+      {% endif %}
+    </figure>
+    <figure>
+      <figcaption>After</figcaption>
+      {% if after %}
+      <img src="/photos/{{ grab.id }}/after?thumb=1" alt="After">
+      {% else %}
+      <div class="empty">—</div>
+      {% endif %}
+      {% if grab.status == 'active' and not grab.submitted_at %}
+      <form method="post" action="/grabs/{{ grab.id }}/photo" enctype="multipart/form-data">
+        <input type="hidden" name="kind" value="after">
+        <input required type="file" name="photo" accept="image/*" capture="environment">
+        <button class="btn" type="submit">Save after</button>
+      </form>
+      {% endif %}
+    </figure>
+  </div>
+  {% if grab.status == 'active' and not grab.submitted_at %}
+  <form method="post" action="/grabs/{{ grab.id }}/submit">
+    <button class="btn gold" type="submit">Submit</button>
+  </form>
+  <form method="post" action="/grabs/{{ grab.id }}/release">
+    <button class="btn ghost" type="submit">Release</button>
+  </form>
+  {% elif grab.submitted_at %}
+  <p class="muted">Waiting on parent review.</p>
+  {% endif %}
+</section>
+{% endblock %}

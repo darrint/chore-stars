@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Boards{% endblock %}
+{% block content %}
+<h1>Boards</h1>
+<section>
+  <h2>Standing this week</h2>
+  <ol class="board">
+    {% for s in week_standings %}
+    <li class="{{ s.status }}"><span>{{ s.user.name }}</span> <em>{{ s.status }}</em></li>
+    {% endfor %}
+  </ol>
+</section>
+<section>
+  <h2>Stars claimed · this week</h2>
+  <ol class="board">{% for r in claimed_week %}<li><span>{{ r.name }}</span> <strong>{{ r.total }}</strong></li>{% else %}<li class="muted">None</li>{% endfor %}</ol>
+</section>
+<section>
+  <h2>Stars awarded · this week</h2>
+  <ol class="board">{% for r in awarded_week %}<li><span>{{ r.name }}</span> <strong>{{ r.total }}</strong></li>{% else %}<li class="muted">None</li>{% endfor %}</ol>
+</section>
+<section>
+  <h2>Slots finished · this week</h2>
+  <ol class="board">{% for r in finished_week %}<li><span>{{ r.name }}</span> <strong>{{ r.total }}</strong></li>{% else %}<li class="muted">None</li>{% endfor %}</ol>
+</section>
+<section>
+  <h2>All-time claimed</h2>
+  <ol class="board">{% for r in claimed_all %}<li><span>{{ r.name }}</span> <strong>{{ r.total }}</strong></li>{% else %}<li class="muted">None</li>{% endfor %}</ol>
+</section>
+<section>
+  <h2>All-time awarded</h2>
+  <ol class="board">{% for r in awarded_all %}<li><span>{{ r.name }}</span> <strong>{{ r.total }}</strong></li>{% else %}<li class="muted">None</li>{% endfor %}</ol>
+</section>
+{% endblock %}

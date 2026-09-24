@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}My stars{% endblock %}
+{% block content %}
+<h1>My stars</h1>
+{% if summary %}
+<ul class="stats">
+  <li>Awarded <strong>{{ summary.awarded }}</strong></li>
+  <li>Ready to claim <strong>{{ summary.unclaimed }}</strong></li>
+  <li>Claimed <strong>{{ summary.claimed }}</strong></li>
+</ul>
+{% if summary.unclaimed %}
+<form method="post" action="/stars/claim">
+  <button class="btn gold" type="submit">Claim {{ summary.unclaimed }}</button>
+</form>
+{% endif %}
+{% endif %}
+<ol class="ledger">
+  {% for e in events %}
+  <li><span class="kind">{{ e.kind }}</span> {{ e.amount }}★</li>
+  {% else %}
+  <li class="muted">Empty ledger.</li>
+  {% endfor %}
+</ol>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Board · Chore Stars{% endblock %}
+{% block content %}
+<h1>Today’s board</h1>
+{% if highlight %}<p class="lede">Filtered: {{ highlight }}</p>{% endif %}
+{% if mine %}
+<p><a class="btn gold" href="/grabs/{{ mine.id }}">Your grab is live</a></p>
+{% endif %}
+<div class="slots">
+  {% for slot in slots %}
+  <article class="slot {{ slot.status }}">
+    <header>
+      <h2>{{ slot.template.title }}</h2>
+      <span class="stars">{{ slot.advertised_stars }}★</span>
+    </header>
+    <p class="meta">{{ slot.slot_date }} · {{ slot.template.period }} · #{{ slot.sequence }}</p>
+    <p class="status">{{ slot.status }}{% if slot.status == 'grabbed' and slot.grabs %} · {{ slot.grabs[-1].user.name }}{% endif %}</p>
+    {% if user and user.role == 'resident' and slot.status == 'open' %}
+    <form method="post" action="/slots/{{ slot.id }}/grab">
+      <button class="btn gold" type="submit">Grab</button>
+    </form>
+    {% endif %}
+  </article>
+  {% else %}
+  <p class="muted">No slots yet. Nightly job opens them.</p>
+  {% endfor %}
+</div>
+{% endblock %}

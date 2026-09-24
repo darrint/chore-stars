@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "chore-stars"
+version = "0.1.0"
+description = "Household participation board. Stars only."
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "jinja2",
+  "sqlalchemy",
+  "psycopg2",
+  "authlib",
+  "httpx",
+  "python-multipart",
+  "pillow",
+  "itsdangerous",
+  "pydantic-settings",
+  "qrcode",
+]
+
+[project.scripts]
+chore-stars = "chore_stars.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["chore_stars"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

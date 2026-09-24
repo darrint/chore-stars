@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}QR sheet{% endblock %}
+{% block content %}
+<h1>QR sheet</h1>
+<p class="lede print-hide">Print this. Same URLs for NFC.</p>
+<div class="qr-grid">
+  {% for c in codes %}
+  <figure class="qr">
+    {{ c.svg | safe }}
+    <figcaption>{{ c.title }}<br><small>{{ c.url }}</small></figcaption>
+  </figure>
+  {% endfor %}
+</div>
+{% endblock %}

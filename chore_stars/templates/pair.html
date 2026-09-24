@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Pairing code{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Pairing code</h1>
+  <p class="code">{{ code.code }}</p>
+  <p class="muted">{{ code.role }} · dies in 20 minutes.</p>
+  <a class="btn" href="/parent">Back</a>
+</section>
+{% endblock %}

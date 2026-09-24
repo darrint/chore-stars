@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Sign in · Chore Stars{% endblock %}
+{% block content %}
+<section class="card login">
+  <h1>Show up.</h1>
+  <p class="lede">Passkeys via PocketID. The board keeps a session so QR taps stay on the house.</p>
+  {% if oidc_ready %}
+  <a class="btn gold" href="/auth/oidc">Sign in with PocketID</a>
+  {% endif %}
+  <form class="pair" method="post" action="/pair">
+    <label>Pairing code
+      <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+    </label>
+    <button class="btn" type="submit">Pair device</button>
+  </form>
+  {% if dev_auth %}
+  <hr>
+  <p class="muted">Dev login</p>
+  {% for u in users %}
+  <form method="post" action="/auth/dev" class="row">
+    <input type="hidden" name="user_id" value="{{ u.id }}">
+    <button class="btn ghost" type="submit">{{ u.name }} <em>{{ u.role }}</em></button>
+  </form>
+  {% endfor %}
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Parent{% endblock %}
+{% block content %}
+<h1>Parent desk</h1>
+<p class="lede">
+  {% if week.owe_stars %}{{ week.awarded_total }} / {{ week.star_budget }} · owe {{ week.owe_stars }}
+  {% else %}{{ week.awarded_total }} / {{ week.star_budget }}{% endif %}
+</p>
+
+<section>
+  <h2>Review stream</h2>
+  {% for grab in pending %}
+  <a class="row card" href="/parent/review/{{ grab.id }}">
+    <strong>{{ grab.user.name }}</strong>
+    <span>{{ grab.slot.template.title }} · locked {{ grab.locked_stars }}★</span>
+  </a>
+  {% else %}
+  <p class="muted">Queue is empty.</p>
+  {% endfor %}
+</section>
+
+<section>
+  <h2>Standing roster</h2>
+  {% for s in standings %}
+  <div class="row">
+    <span>{{ s.user.name }} <em class="chip {{ s.status }}">{{ s.status }}</em></span>
+    <form method="post" action="/parent/roster/{{ s.user_id }}">
+      <input type="hidden" name="action" value="clear">
+      <button class="text" type="submit">Clear</button>
+    </form>
+    <form method="post" action="/parent/roster/{{ s.user_id }}">
+      <input type="hidden" name="action" value="miss">
+      <button class="text" type="submit">Miss</button>
+    </form>
+    <form method="post" action="/parent/roster/{{ s.user_id }}">
+      <input type="hidden" name="action" value="revoke">
+      <button class="text" type="submit">Revoke</button>
+    </form>
+  </div>
+  {% endfor %}
+</section>
+
+<section>
+  <h2>Open slot values</h2>
+  {% for slot in open_slots_list %}
+  <form class="row" method="post" action="/parent/slots/{{ slot.id }}/stars">
+    <span>{{ slot.template.title }} {{ slot.slot_date }} #{{ slot.sequence }}</span>
+    <input type="number" name="advertised_stars" value="{{ slot.advertised_stars }}" min="0">
+    <button class="btn" type="submit">Set</button>
+  </form>
+  {% endfor %}
+</section>
+
+<section>
+  <h2>Pool adjust</h2>
+  <form class="row" method="post" action="/parent/pool/adjust">
+    <input type="number" name="amount" value="0">
+    <button class="btn" type="submit">Adjust (positive shrinks owe)</button>
+  </form>
+</section>
+
+<section>
+  <h2>Pair a device</h2>
+  <form class="row" method="post" action="/parent/pair">
+    <select name="role">
+      <option value="kiosk">Kiosk</option>
+      <option value="resident">Resident phone</option>
+      <option value="parent">Parent phone</option>
+    </select>
+    <select name="user_id">
+      <option value="">New kiosk user</option>
+      {% for r in residents %}
+      <option value="{{ r.id }}">{{ r.name }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn gold" type="submit">Make code</button>
+  </form>
+  <p><a href="/parent/qr">QR sheet</a></p>
+</section>
+{% endblock %}

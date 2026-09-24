@@ -1,0 +1,17 @@
+{
+  "name": "Chore Stars",
+  "short_name": "Stars",
+  "start_url": "/board",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1a1714",
+  "theme_color": "#1a1714",
+  "icons": [
+    {
+      "src": "/static/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

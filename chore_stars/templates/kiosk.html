@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Kitchen wall{% endblock %}
+{% block bodyclass %}kiosk{% endblock %}
+{% block content %}
+<div class="kiosk-grid">
+  <section>
+    <h1>Board</h1>
+    <div class="slots compact">
+      {% for slot in slots %}
+      <article class="slot {{ slot.status }}">
+        <h2>{{ slot.template.title }}</h2>
+        <p>{{ slot.advertised_stars }}★ · {{ slot.status }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  <section>
+    <h1>Wall</h1>
+    <div class="wall">
+      {% for post in posts %}
+      <article class="post">
+        <img src="/photos/{{ post.grab_id }}/after?thumb=1" alt="">
+        <div>
+          <h2>{{ post.user.name }}</h2>
+          <p>{{ post.grab.slot.template.title }}</p>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  <section>
+    <h1>Standing</h1>
+    <ol class="board">
+      {% for s in standings %}
+      <li class="{{ s.status }}"><span>{{ s.user.name }}</span> <em>{{ s.status }}</em></li>
+      {% endfor %}
+    </ol>
+    <p class="meter big">
+      {% if week.owe_stars %}{{ week.awarded_total }} / {{ week.star_budget }} · owe {{ week.owe_stars }}
+      {% else %}{{ week.awarded_total }} / {{ week.star_budget }}{% endif %}
+    </p>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>setTimeout(() => location.reload(), 45000)</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Wall{% endblock %}
+{% block content %}
+<h1>Wall</h1>
+<div class="wall">
+  {% for post in posts %}
+  <article class="post">
+    <img src="/photos/{{ post.grab_id }}/after?thumb=1" alt="">
+    <div>
+      <h2>{{ post.user.name }}</h2>
+      <p>{{ post.grab.slot.template.title }} · {{ post.grab.locked_stars }}★</p>
+      <span class="chip {{ standings.get(post.user_id, 'quiet') }}">{{ standings.get(post.user_id, 'quiet') }}</span>
+      {% if user and user.role == 'parent' %}
+      <form method="post" action="/parent/wall/{{ post.id }}/hide"><button class="text" type="submit">Hide</button></form>
+      {% endif %}
+    </div>
+  </article>
+  {% else %}
+  <p class="muted">Nothing on the wall yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}
