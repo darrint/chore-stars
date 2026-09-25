@@ -245,6 +245,36 @@ def claim_stars(db: Session, user: User, week: Week) -> int:
     return pending
 
 
+def payout_split(db: Session, week: Week, total_cents: int) -> list[dict]:
+    if total_cents < 0:
+        raise ValueError("Payout cannot be negative.")
+    rows = db.execute(
+        select(User.name, func.coalesce(func.sum(StarEvent.amount), 0))
+        .join(StarEvent, StarEvent.user_id == User.id)
+        .where(User.role == "resident", StarEvent.week_id == week.id, StarEvent.kind == "award")
+        .group_by(User.id, User.name)
+        .order_by(User.name)
+    ).all()
+    awarded = [(name, int(stars)) for name, stars in rows if int(stars) > 0]
+    total_stars = sum(stars for _name, stars in awarded)
+    if total_stars == 0:
+        return []
+    shares = []
+    for name, stars in awarded:
+        exact = total_cents * stars
+        shares.append({"name": name, "stars": stars, "cents": exact // total_stars, "rem": exact % total_stars})
+    leftover = total_cents - sum(row["cents"] for row in shares)
+    for row in sorted(shares, key=lambda item: (-item["rem"], item["name"])):
+        if leftover <= 0:
+            break
+        row["cents"] += 1
+        leftover -= 1
+    for row in shares:
+        row["dollars"] = f"{row['cents'] / 100:.2f}"
+        del row["rem"]
+    return shares
+
+
 def adjust_pool(db: Session, week: Week, amount: int) -> None:
     week.pool_adjust += amount
     recalc_week_pool(db, week)

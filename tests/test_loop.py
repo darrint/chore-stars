@@ -1,7 +1,10 @@
+from datetime import date
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from chore_stars.models import ChoreSlot, Grab, User, WallPost, Week
+from chore_stars.models import ChoreSlot, ChoreTemplate, Grab, StarEvent, User, WallPost, Week
+from chore_stars.seed import seed_templates
 from tests.conftest import jpeg_bytes, login, user_named
 
 
@@ -92,10 +95,10 @@ def test_wall_backfills_missing_posts(client, app):
         slot_id = slot.id
     grab_url = client.post(f"/slots/{slot_id}/grab", follow_redirects=False).headers["location"]
     page = client.get(grab_url)
-    assert "Take photo" in page.text
-    assert "Choose photo" in page.text
+    assert "Take photo" not in page.text
+    assert "Choose photo" not in page.text
     assert "Open camera" in page.text
-    assert 'data-save' in page.text and "hidden" in page.text
+    assert "Use this shot" in page.text
     grab_id = int(grab_url.rsplit("/", 1)[-1])
     for kind in ("before", "after"):
         client.post(
@@ -112,6 +115,76 @@ def test_wall_backfills_missing_posts(client, app):
         db.commit()
     wall = client.get("/wall")
     assert "Alex" in wall.text
+
+
+def test_board_lists_trash_and_split_outdoor(client, app):
+    login(client, app, "Alex")
+    page = client.get("/board")
+    assert "Take out trash" in page.text
+    assert "Burn boxes" in page.text
+    assert "Outdoor weeding" in page.text
+    assert "Edge, prune, blow" not in page.text
+
+
+def test_retired_combo_drops_open_slots(app):
+    with Session(app.state.engine) as db:
+        old = ChoreTemplate(
+            slug="edge-prune-blow",
+            title="Edge, prune, blow",
+            default_stars=6,
+            cap=1,
+            period="week",
+            active=True,
+        )
+        db.add(old)
+        db.flush()
+        week = db.execute(select(Week)).scalar_one()
+        db.add(
+            ChoreSlot(
+                week_id=week.id,
+                template_id=old.id,
+                slot_date=date(2026, 9, 24),
+                advertised_stars=6,
+                status="open",
+                sequence=1,
+            )
+        )
+        db.add(
+            ChoreSlot(
+                week_id=week.id,
+                template_id=old.id,
+                slot_date=date(2026, 9, 24),
+                advertised_stars=6,
+                status="awarded",
+                sequence=2,
+            )
+        )
+        db.commit()
+        seed_templates(db)
+        db.commit()
+        old = db.execute(select(ChoreTemplate).where(ChoreTemplate.slug == "edge-prune-blow")).scalar_one()
+        assert old.active is False
+        left = db.execute(select(ChoreSlot).where(ChoreSlot.template_id == old.id)).scalars().all()
+        assert [slot.status for slot in left] == ["awarded"]
+
+
+def test_payout_split_uses_awarded_stars(client, app):
+    login(client, app, "Dad")
+    empty = client.get("/parent?payout=40")
+    assert "No awarded stars this week." in empty.text
+    with Session(app.state.engine) as db:
+        week = db.execute(select(Week)).scalar_one()
+        alex = db.execute(select(User).where(User.name == "Alex")).scalar_one()
+        sam = db.execute(select(User).where(User.name == "Sam")).scalar_one()
+        db.add(StarEvent(user_id=alex.id, week_id=week.id, kind="award", amount=3))
+        db.add(StarEvent(user_id=sam.id, week_id=week.id, kind="award", amount=1))
+        db.commit()
+    page = client.get("/parent?payout=10")
+    assert "$7.50" in page.text
+    assert "$2.50" in page.text
+    odd = client.get("/parent?payout=0.01")
+    assert "$0.01" in odd.text
+    assert odd.text.count("$0.00") == 1
 
 
 def test_parents_only(client, app):

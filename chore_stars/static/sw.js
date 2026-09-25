@@ -1,4 +1,4 @@
-const CACHE = "chore-stars-v2";
+const CACHE = "chore-stars-v3";
 const SHELL = ["/static/style.css", "/static/app.js", "/static/icon.svg", "/manifest.json"];
 
 self.addEventListener("install", (event) => {

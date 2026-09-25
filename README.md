@@ -2,7 +2,7 @@
 
 Household participation board. Stars only. Cash is paid outside the app.
 
-Fiscal week is Thursday–Wednesday, `America/Indiana/Indianapolis`. The week pool is 100 stars. Parents may award past 100; the extra is an **owe**.
+Fiscal week is Thursday–Wednesday, `America/Indiana/Indianapolis`. The purse is 100 stars. Advertised chores may add up to more than that. Parents may award past 100; the extra is an **owe**.
 
 Live site: `https://cs.thompsons.space`.
 
@@ -64,6 +64,10 @@ Every still-open slot for this week, with its date and sequence. **Set** changes
 ### Pool adjust
 
 A signed number added to this week's pool adjustment. **Positive shrinks owe.** Owe is `max(0, awarded − 100 − adjustment)`. Negative adjustment can raise owe without awarding anyone. The change is stored as an adjust event on the parent, not as resident stars.
+
+### Payout split
+
+Type a dollar total and **Split**. Each resident's share is that total times their awarded stars divided by all awarded stars this week. Shares are in cents and add up to the total. If nobody has an award yet, it says so. This does not send money.
 
 ### Pair a device
 

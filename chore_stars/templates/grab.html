@@ -15,20 +15,11 @@
       {% if grab.status == 'active' and not grab.submitted_at %}
       <form class="shot" method="post" action="/grabs/{{ grab.id }}/photo" enctype="multipart/form-data">
         <input type="hidden" name="kind" value="before">
-        <img class="pick" alt="" hidden>
-        <p class="muted">Pick a photo first. Save appears after.</p>
-        <div class="shot-actions">
-          <label class="btn file-btn">Take photo
-            <input type="file" accept="image/*" capture="environment" data-pick>
-          </label>
-          <label class="btn ghost file-btn">Choose photo
-            <input type="file" accept="image/*" data-pick>
-          </label>
-          <button class="btn ghost" type="button" data-camera>Open camera</button>
-        </div>
+        <input type="file" name="photo" accept="image/*" hidden data-slot>
+        <p class="muted">Use this shot saves it. Open camera again to replace.</p>
+        <button class="btn" type="button" data-camera>Open camera</button>
         <video hidden playsinline autoplay muted></video>
-        <button class="btn" type="button" data-snap hidden>Use this shot</button>
-        <button class="btn gold" type="submit" data-save hidden>Save before</button>
+        <button class="btn gold" type="button" data-snap hidden>Use this shot</button>
         <p class="muted shot-note" hidden></p>
       </form>
       {% endif %}
@@ -43,20 +34,11 @@
       {% if grab.status == 'active' and not grab.submitted_at %}
       <form class="shot" method="post" action="/grabs/{{ grab.id }}/photo" enctype="multipart/form-data">
         <input type="hidden" name="kind" value="after">
-        <img class="pick" alt="" hidden>
-        <p class="muted">Pick a photo first. Save appears after.</p>
-        <div class="shot-actions">
-          <label class="btn file-btn">Take photo
-            <input type="file" accept="image/*" capture="environment" data-pick>
-          </label>
-          <label class="btn ghost file-btn">Choose photo
-            <input type="file" accept="image/*" data-pick>
-          </label>
-          <button class="btn ghost" type="button" data-camera>Open camera</button>
-        </div>
+        <input type="file" name="photo" accept="image/*" hidden data-slot>
+        <p class="muted">Use this shot saves it. Open camera again to replace.</p>
+        <button class="btn" type="button" data-camera>Open camera</button>
         <video hidden playsinline autoplay muted></video>
-        <button class="btn" type="button" data-snap hidden>Use this shot</button>
-        <button class="btn gold" type="submit" data-save hidden>Save after</button>
+        <button class="btn gold" type="button" data-snap hidden>Use this shot</button>
         <p class="muted shot-note" hidden></p>
       </form>
       {% endif %}
@@ -77,11 +59,11 @@
 {% block scripts %}
 <script>
 for (const form of document.querySelectorAll("form.shot")) {
-  const save = form.querySelector("[data-save]");
-  const preview = form.querySelector("img.pick");
   const note = form.querySelector(".shot-note");
   const video = form.querySelector("video");
   const snap = form.querySelector("[data-snap]");
+  const slot = form.querySelector("[data-slot]");
+  const open = form.querySelector("[data-camera]");
   let stream = null;
 
   function stopCam() {
@@ -93,36 +75,19 @@ for (const form of document.querySelectorAll("form.shot")) {
     snap.hidden = true;
   }
 
-  function arm(file, input) {
-    for (const other of form.querySelectorAll("[data-pick], [data-slot]")) {
-      if (other === input) continue;
-      other.removeAttribute("name");
-      other.value = "";
-    }
-    input.name = "photo";
-    if (preview.src) URL.revokeObjectURL(preview.src);
-    preview.src = URL.createObjectURL(file);
-    preview.hidden = false;
-    save.hidden = false;
-    note.hidden = true;
-    stopCam();
+  function fail(text) {
+    note.textContent = text;
+    note.hidden = false;
   }
 
-  for (const input of form.querySelectorAll("[data-pick]")) {
-    input.addEventListener("change", () => {
-      const file = input.files && input.files[0];
-      if (file) arm(file, input);
-    });
-  }
-
-  form.querySelector("[data-camera]").addEventListener("click", async () => {
+  open.addEventListener("click", async () => {
     note.hidden = true;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      note.textContent = "No in-page camera. Use Take photo or Choose photo.";
-      note.hidden = false;
+      fail("This browser has no camera.");
       return;
     }
     try {
+      stopCam();
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" } },
         audio: false,
@@ -131,31 +96,33 @@ for (const form of document.querySelectorAll("form.shot")) {
       video.hidden = false;
       snap.hidden = false;
     } catch (err) {
-      note.textContent = "Camera did not open. Try Take photo or Choose photo.";
-      note.hidden = false;
+      fail("Camera did not open.");
     }
   });
 
   snap.addEventListener("click", () => {
+    if (!video.videoWidth) {
+      fail("Camera is not ready.");
+      return;
+    }
+    snap.disabled = true;
+    snap.textContent = "Saving…";
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     canvas.getContext("2d").drawImage(video, 0, 0);
     canvas.toBlob((blob) => {
-      if (!blob) return;
-      const file = new File([blob], "camera.jpg", { type: "image/jpeg" });
-      let slot = form.querySelector("[data-slot]");
-      if (!slot) {
-        slot = document.createElement("input");
-        slot.type = "file";
-        slot.hidden = true;
-        slot.dataset.slot = "";
-        form.appendChild(slot);
+      if (!blob) {
+        snap.disabled = false;
+        snap.textContent = "Use this shot";
+        fail("Could not save that shot.");
+        return;
       }
       const data = new DataTransfer();
-      data.items.add(file);
+      data.items.add(new File([blob], "camera.jpg", { type: "image/jpeg" }));
       slot.files = data.files;
-      arm(file, slot);
+      stopCam();
+      form.submit();
     }, "image/jpeg", 0.85);
   });
 }

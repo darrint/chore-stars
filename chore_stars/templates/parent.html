@@ -74,6 +74,26 @@
 </section>
 
 <section>
+  <h2>Payout split</h2>
+  <p class="muted">Cash is paid outside the app. This only splits a total by awarded stars.</p>
+  <form class="row" method="get" action="/parent">
+    <input type="number" name="payout" min="0" step="0.01" value="{{ payout }}" placeholder="Total dollars">
+    <button class="btn" type="submit">Split</button>
+  </form>
+  {% if payout_error %}
+  <p class="muted">{{ payout_error }}</p>
+  {% elif payout_shares is not none and not payout_shares %}
+  <p class="muted">No awarded stars this week.</p>
+  {% elif payout_shares %}
+  <ul class="board">
+    {% for row in payout_shares %}
+    <li><span>{{ row.name }} · {{ row.stars }}★</span><span>${{ row.dollars }}</span></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+
+<section>
   <h2>Pair a device</h2>
   <form class="row" method="post" action="/parent/pair">
     <select name="role">

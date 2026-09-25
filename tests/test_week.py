@@ -4,8 +4,15 @@ from chore_stars.seed import week_advertised_capacity
 from chore_stars.timeutil import infraction_cutoff, quiet_cutoff, week_start
 
 
-def test_full_week_advertised_is_100():
-    assert week_advertised_capacity() == 100
+def test_week_advertised_capacity_is_template_sum():
+    from chore_stars.seed import TEMPLATES
+
+    slugs = {row[0] for row in TEMPLATES}
+    assert "take-out-trash" in slugs
+    assert "burn-boxes" in slugs
+    assert {"edge", "blow", "outdoor-weeding"} <= slugs
+    assert "edge-prune-blow" not in slugs
+    assert week_advertised_capacity() == 128
 
 
 def test_thursday_is_start():

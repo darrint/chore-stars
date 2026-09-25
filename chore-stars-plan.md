@@ -86,7 +86,11 @@ Parents can clear or mark a miss by hand (sick day, out of town).
 | Load laundry | 4 / day |
 | Sort and distribute clean laundry | 1 / day, higher default |
 | Mow lawn | 1 / week |
-| Edge, prune, blow | 1 / week, higher default |
+| Take out trash | 4 / day |
+| Edge | 1 / week |
+| Blow | 1 / week |
+| Outdoor weeding | 1 / week |
+| Burn boxes | 1 / week |
 
 Two residents may grab remaining slots of the same template.
 

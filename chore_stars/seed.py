@@ -9,10 +9,15 @@ TEMPLATES = [
     ("vacuum-rugs", "Vacuum rugs", 2, 1, "day"),
     ("load-laundry", "Load laundry", 1, 2, "day"),
     ("sort-laundry", "Sort and distribute clean laundry", 4, 1, "day"),
+    ("take-out-trash", "Take out trash", 1, 4, "day"),
     ("mow-lawn", "Mow lawn", 7, 1, "week"),
-    ("edge-prune-blow", "Edge, prune, blow", 6, 1, "week"),
+    ("edge", "Edge", 2, 1, "week"),
+    ("blow", "Blow", 2, 1, "week"),
+    ("outdoor-weeding", "Outdoor weeding", 2, 1, "week"),
     ("burn-boxes", "Burn boxes", 3, 1, "week"),
 ]
+
+RETIRED = ("edge-prune-blow",)
 
 
 def week_advertised_capacity() -> int:
@@ -53,6 +58,7 @@ def seed_templates(db: Session) -> None:
         template.default_stars = stars
         template.cap = cap
         template.period = period
+        template.active = True
         open_slots = db.query(ChoreSlot).filter(
             ChoreSlot.template_id == template.id,
             ChoreSlot.status == "open",
@@ -64,6 +70,16 @@ def seed_templates(db: Session) -> None:
             for slot in open_slots:
                 if slot.sequence > cap:
                     db.delete(slot)
+    for slug in RETIRED:
+        template = by_slug.get(slug)
+        if template is None:
+            continue
+        template.active = False
+        for slot in db.query(ChoreSlot).filter(
+            ChoreSlot.template_id == template.id,
+            ChoreSlot.status == "open",
+        ):
+            db.delete(slot)
     db.flush()
 
 

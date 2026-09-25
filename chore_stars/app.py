@@ -1,3 +1,4 @@
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -42,6 +43,7 @@ from chore_stars.services import (
     grab_slot,
     leaderboard,
     live_grabs,
+    payout_split,
     proof_of,
     release_grab,
     review_grab,
@@ -455,11 +457,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     @app.get("/parent", response_class=HTMLResponse)
-    def parent_home(request: Request, db: Session = Depends(get_db)):
+    def parent_home(request: Request, payout: str = "", db: Session = Depends(get_db)):
         user = need_user(request, db)
         if user.role != "parent":
             raise HTTPException(status_code=403)
         week = ensure_week(db, settings)
+        payout_shares = None
+        payout_error = None
+        if payout.strip():
+            try:
+                amount = Decimal(payout.strip())
+                if amount < 0 or amount.as_tuple().exponent < -2:
+                    raise ValueError("Use dollars and cents.")
+                payout_shares = payout_split(db, week, int(amount * 100))
+            except (InvalidOperation, ValueError) as exc:
+                payout_error = "Use dollars and cents." if isinstance(exc, InvalidOperation) else str(exc)
         pending = (
             db.execute(
                 select(Grab)
@@ -496,6 +508,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 standings=standings,
                 open_slots_list=open_slots_list,
                 residents=residents,
+                payout=payout,
+                payout_shares=payout_shares,
+                payout_error=payout_error,
             ),
         )
 
