@@ -189,6 +189,35 @@ def test_payout_split_uses_awarded_stars(client, app):
     assert odd.text.count("$0.00") == 1
 
 
+def test_stale_open_slots_expire(client, app):
+    from datetime import timedelta
+
+    from chore_stars.jobs import expire_stale_slots
+    from chore_stars.models import ChoreTemplate
+    from chore_stars.timeutil import local_today, week_start
+
+    today = local_today("America/Indiana/Indianapolis")
+    with Session(app.state.engine) as db:
+        daily = db.execute(
+            select(ChoreSlot).join(ChoreTemplate).where(ChoreSlot.status == "open", ChoreTemplate.period == "day")
+        ).scalars().first()
+        weekly = db.execute(
+            select(ChoreSlot).join(ChoreTemplate).where(ChoreSlot.status == "open", ChoreTemplate.period == "week")
+        ).scalars().first()
+        daily.slot_date = today - timedelta(days=1)
+        weekly.slot_date = week_start(today)
+        daily_id = daily.id
+        weekly_id = weekly.id
+        db.commit()
+        expire_stale_slots(db, app.state.settings)
+        db.commit()
+        assert db.get(ChoreSlot, daily_id).status == "expired"
+        assert db.get(ChoreSlot, weekly_id).status == "open"
+    login(client, app, "Alex")
+    page = client.get("/board")
+    assert f"/slots/{daily_id}/grab" not in page.text
+
+
 def test_parents_only(client, app):
     login(client, app, "Alex")
     denied = client.get("/parent", follow_redirects=False)

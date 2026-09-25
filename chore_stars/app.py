@@ -21,7 +21,14 @@ from chore_stars.auth import (
 )
 from chore_stars.config import Settings, load_settings
 from chore_stars.db import init_db, make_engine, make_session_factory, session_dep
-from chore_stars.jobs import ensure_week, open_slots, recalc_week_pool, run_daily, standing_check
+from chore_stars.jobs import (
+    ensure_week,
+    expire_stale_slots,
+    open_slots,
+    recalc_week_pool,
+    run_daily,
+    standing_check,
+)
 from chore_stars.models import (
     ChoreSlot,
     ChoreTemplate,
@@ -76,6 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if settings.dev_auth:
             seed_dev_users(db)
         open_slots(db, settings)
+        expire_stale_slots(db, settings)
         backfill_wall_posts(db, settings)
         db.commit()
 
@@ -213,7 +221,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         q = (
             select(ChoreSlot)
             .options(selectinload(ChoreSlot.template), selectinload(ChoreSlot.grabs).selectinload(Grab.user))
-            .where(ChoreSlot.week_id == week.id)
+            .where(ChoreSlot.week_id == week.id, ChoreSlot.status != "expired")
             .order_by(ChoreSlot.slot_date, ChoreSlot.template_id, ChoreSlot.sequence)
         )
         slots = list(db.execute(q).scalars())

@@ -14,7 +14,7 @@ from chore_stars.models import (
     User,
     Week,
 )
-from chore_stars.timeutil import infraction_cutoff, local_today, now_tz, quiet_cutoff, week_start
+from chore_stars.timeutil import infraction_cutoff, local_today, now_tz, quiet_cutoff, week_end, week_start
 
 
 def ensure_week(db: Session, settings: Settings, when: datetime | None = None) -> Week:
@@ -74,6 +74,22 @@ def open_slots(db: Session, settings: Settings) -> int:
             created += 1
     db.flush()
     return created
+
+
+def expire_stale_slots(db: Session, settings: Settings) -> int:
+    today = local_today(settings.timezone)
+    expired = 0
+    rows = db.execute(
+        select(ChoreSlot, ChoreTemplate.period).join(ChoreTemplate).where(ChoreSlot.status == "open")
+    ).all()
+    for slot, period in rows:
+        stale = week_end(slot.slot_date) < today if period == "week" else slot.slot_date < today
+        if not stale:
+            continue
+        slot.status = "expired"
+        expired += 1
+    db.flush()
+    return expired
 
 
 def expire_grabs(db: Session, settings: Settings) -> int:
@@ -183,7 +199,7 @@ def push_ntfy(settings: Settings, messages: list[str]) -> None:
 
 def run_daily(db: Session, settings: Settings) -> dict[str, int | list[str]]:
     opened = open_slots(db, settings)
-    expired = expire_grabs(db, settings)
+    expired = expire_grabs(db, settings) + expire_stale_slots(db, settings)
     standing_check(db, settings)
     week = ensure_week(db, settings)
     recalc_week_pool(db, week)
