@@ -11,11 +11,13 @@ TEMPLATES = [
     ("load-laundry", "Load laundry", 1, 2, "day"),
     ("sort-laundry", "Sort and distribute clean laundry", 4, 1, "day"),
     ("take-out-trash", "Take out trash", 1, 4, "day"),
+    ("scoop-litter", "Scoop litter", 1, 1, "day"),
     ("mow-lawn", "Mow lawn", 7, 1, "week"),
     ("edge", "Edge", 2, 1, "week"),
     ("blow", "Blow", 2, 1, "week"),
     ("outdoor-weeding", "Outdoor weeding", 2, 1, "week"),
     ("burn-boxes", "Burn boxes", 3, 1, "week"),
+    ("change-litter", "Change litter", 3, 1, "week"),
 ]
 
 RETIRED = ("edge-prune-blow",)

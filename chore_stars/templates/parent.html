@@ -58,7 +58,7 @@
   <h2>Open slot values</h2>
   {% for slot in open_slots_list %}
   <form class="row" method="post" action="/parent/slots/{{ slot.id }}/stars">
-    <span>{{ slot.template.title }} {{ slot.slot_date }} #{{ slot.sequence }}</span>
+    <span>{{ slot.template.title }} {% if slot.template.period == 'week' %}this week{% else %}{{ slot.slot_date }}{% endif %} #{{ slot.sequence }}</span>
     <input type="number" name="advertised_stars" value="{{ slot.advertised_stars }}" min="0">
     <button class="btn" type="submit">Set</button>
   </form>

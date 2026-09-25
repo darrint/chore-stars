@@ -80,12 +80,19 @@ def expire_stale_slots(db: Session, settings: Settings) -> int:
     today = local_today(settings.timezone)
     expired = 0
     rows = db.execute(
-        select(ChoreSlot, ChoreTemplate.period).join(ChoreTemplate).where(ChoreSlot.status == "open")
+        select(ChoreSlot, ChoreTemplate.period)
+        .join(ChoreTemplate)
+        .where(ChoreSlot.status.in_(("open", "grabbed")))
     ).all()
     for slot, period in rows:
         stale = week_end(slot.slot_date) < today if period == "week" else slot.slot_date < today
         if not stale:
             continue
+        if slot.status == "grabbed":
+            for grab in db.execute(
+                select(Grab).where(Grab.slot_id == slot.id, Grab.status == "active", Grab.submitted_at.is_(None))
+            ).scalars():
+                grab.status = "expired"
         slot.status = "expired"
         expired += 1
     db.flush()

@@ -88,6 +88,8 @@ Parents can clear or mark a miss by hand (sick day, out of town).
 | Sort and distribute clean laundry | 1 / day, higher default |
 | Mow lawn | 1 / week |
 | Take out trash | 4 / day |
+| Scoop litter | 1 / day, 1★ |
+| Change litter | 1 / week, 3★ |
 | Edge | 1 / week |
 | Blow | 1 / week |
 | Outdoor weeding | 1 / week |

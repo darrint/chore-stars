@@ -13,7 +13,7 @@
       <h2>{{ slot.template.title }}</h2>
       <span class="stars">{{ slot.advertised_stars }}★</span>
     </header>
-    <p class="meta">{{ slot.slot_date }} · {{ slot.template.period }} · #{{ slot.sequence }}</p>
+    <p class="meta">{% if slot.template.period == 'week' %}this week{% else %}{{ slot.slot_date }}{% endif %} · #{{ slot.sequence }}</p>
     <p class="status">{{ slot.status }}{% if slot.status == 'grabbed' and slot.grabs %} · {{ slot.grabs[-1].user.name }}{% endif %}</p>
     {% if user and user.role == 'resident' and slot.status == 'open' %}
     <form method="post" action="/slots/{{ slot.id }}/grab">

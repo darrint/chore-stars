@@ -23,6 +23,7 @@ from chore_stars.config import Settings, load_settings
 from chore_stars.db import init_db, make_engine, make_session_factory, session_dep
 from chore_stars.jobs import (
     ensure_week,
+    expire_grabs,
     expire_stale_slots,
     open_slots,
     recalc_week_pool,
@@ -83,6 +84,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if settings.dev_auth:
             seed_dev_users(db)
         open_slots(db, settings)
+        expire_grabs(db, settings)
         expire_stale_slots(db, settings)
         backfill_wall_posts(db, settings)
         db.commit()
@@ -224,9 +226,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             .where(ChoreSlot.week_id == week.id, ChoreSlot.status != "expired")
             .order_by(ChoreSlot.slot_date, ChoreSlot.template_id, ChoreSlot.sequence)
         )
-        slots = list(db.execute(q).scalars())
+        slots = [
+            slot
+            for slot in db.execute(q).scalars()
+            if (slot.template.period == "week" and slot.slot_date == week.thu_start)
+            or (slot.template.period != "week" and slot.slot_date == today)
+        ]
         if slug:
             slots = [s for s in slots if s.template.slug == slug]
+        expire_stale_slots(db, settings)
         return slots, today
 
     @app.get("/board", response_class=HTMLResponse)
@@ -494,16 +502,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         standings = list(
             db.execute(select(Standing).options(selectinload(Standing.user)).where(Standing.week_id == week.id)).scalars()
         )
-        open_slots_list = (
-            db.execute(
+        today = local_today(settings.timezone)
+        expire_stale_slots(db, settings)
+        open_slots_list = [
+            slot
+            for slot in db.execute(
                 select(ChoreSlot)
                 .options(selectinload(ChoreSlot.template))
                 .where(ChoreSlot.week_id == week.id, ChoreSlot.status == "open")
                 .order_by(ChoreSlot.slot_date, ChoreSlot.template_id)
-            )
-            .scalars()
-            .all()
-        )
+            ).scalars()
+            if slot.template.period == "week" or slot.slot_date == today
+        ]
         residents = db.execute(select(User).where(User.role == "resident").order_by(User.name)).scalars().all()
         return templates.TemplateResponse(
             request,

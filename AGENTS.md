@@ -18,7 +18,7 @@ Household participation PWA. Stars only. A parent payout split is a calculator, 
 - Grab locks `advertised_stars`. Review may award a different amount. Editing an open slot does not change an in-progress lock.
 - Award creates a `wall_posts` row. Startup and `/wall` backfill any awarded grab that is missing one.
 - Ungrab only releases `status == "active"`. It reopens the slot and does not reverse an award.
-- Open daily slots expire after their date. Open weekly slots expire after Wednesday. Submitted and awarded slots stay.
+- Open and unsubmitted grabs expire after their day. Weekly slots expire after Wednesday. The board only lists today's dailies and this week's weekly chores. Submitted and awarded slots stay off the board.
 - Pool owe is `max(0, awarded_total - star_budget - pool_adjust)`. Positive adjust shrinks owe.
 - Clear standing sets `cleared_at` and skips the nightly infraction check unless `parent_marked_miss` is set again. Award calls `mark_present`, which also clears a parent miss.
 - Revoke only inserts a `PrivilegeFlag`. Nothing in this app locks a phone.

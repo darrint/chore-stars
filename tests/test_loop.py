@@ -13,6 +13,8 @@ def test_login_and_board(client, app):
     page = client.get("/board")
     assert page.status_code == 200
     assert "Load dishwasher" in page.text
+    assert "Scoop litter" in page.text
+    assert "Change litter" in page.text
     assert "Unload dishwasher" in page.text
     assert "Grab" in page.text
 
@@ -216,6 +218,7 @@ def test_stale_open_slots_expire(client, app):
     login(client, app, "Alex")
     page = client.get("/board")
     assert f"/slots/{daily_id}/grab" not in page.text
+    assert str(today - timedelta(days=1)) not in page.text
 
 
 def test_parents_only(client, app):
