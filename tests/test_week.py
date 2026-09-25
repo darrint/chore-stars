@@ -12,7 +12,7 @@ def test_week_advertised_capacity_is_template_sum():
     assert "burn-boxes" in slugs
     assert {"edge", "blow", "outdoor-weeding"} <= slugs
     assert "edge-prune-blow" not in slugs
-    assert week_advertised_capacity() == 128
+    assert week_advertised_capacity() == 184
 
 
 def test_thursday_is_start():

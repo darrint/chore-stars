@@ -13,6 +13,7 @@ def test_login_and_board(client, app):
     page = client.get("/board")
     assert page.status_code == 200
     assert "Load dishwasher" in page.text
+    assert "Unload dishwasher" in page.text
     assert "Grab" in page.text
 
 
@@ -62,6 +63,7 @@ def test_one_active_grab_and_award_claim_owe(client, app):
     assert "Claimed" in claimed.text
     wall = client.get("/wall")
     assert "Alex" in wall.text
+    assert "Share" in wall.text
 
 
 def test_wall_shows_grab_and_parent_ungrab(client, app):

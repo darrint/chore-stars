@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from chore_stars.models import ChoreSlot, ChoreTemplate, User
 
 TEMPLATES = [
-    ("load-dishwasher", "Load dishwasher", 1, 2, "day"),
+    ("load-dishwasher", "Load dishwasher", 3, 2, "day"),
+    ("unload-dishwasher", "Unload dishwasher", 2, 2, "day"),
     ("sweep-north", "Sweep north", 1, 1, "day"),
     ("sweep-south", "Sweep south", 1, 1, "day"),
     ("vacuum-rugs", "Vacuum rugs", 2, 1, "day"),

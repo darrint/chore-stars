@@ -79,7 +79,8 @@ Parents can clear or mark a miss by hand (sick day, out of town).
 
 | Template | Cap |
 |---|---|
-| Load dishwasher | 2 / day |
+| Load dishwasher | 2 / day, 3★ |
+| Unload dishwasher | 2 / day, 2★ |
 | Sweep north | 1 / day |
 | Sweep south | 1 / day |
 | Vacuum rugs | 1 / day |

@@ -19,6 +19,7 @@
       <h2>{{ grab.user.name }}</h2>
       <p>{{ grab.slot.template.title }} · {{ grab.locked_stars }}★</p>
       <span class="chip grabbed">{{ grab.slot.status }}</span>
+      <button type="button" class="text" data-share data-text="{{ grab.user.name }} is on {{ grab.slot.template.title }} · {{ grab.locked_stars }}★" data-files="/photos/{{ grab.id }}/before,/photos/{{ grab.id }}/after">Share</button>
       {% if user and user.role == 'parent' %}
       <form method="post" action="/parent/grabs/{{ grab.id }}/ungrab"><button class="text" type="submit">Ungrab</button></form>
       {% endif %}
@@ -33,6 +34,7 @@
       <h2>{{ post.user.name }}</h2>
       <p>{{ post.grab.slot.template.title }} · {{ post.grab.locked_stars }}★</p>
       <span class="chip {{ standings.get(post.user_id, 'quiet') }}">{{ standings.get(post.user_id, 'quiet') }}</span>
+      <button type="button" class="text" data-share data-text="{{ post.user.name }} did {{ post.grab.slot.template.title }} · {{ post.grab.locked_stars }}★" data-files="/photos/{{ post.grab_id }}/before,/photos/{{ post.grab_id }}/after">Share</button>
       {% if user and user.role == 'parent' %}
         {% if post.hidden_at %}
         <form method="post" action="/parent/wall/{{ post.id }}/unhide"><button class="text" type="submit">Unhide</button></form>

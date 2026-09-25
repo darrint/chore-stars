@@ -8,6 +8,7 @@
   <li>Ready to claim <strong>{{ summary.unclaimed }}</strong></li>
   <li>Claimed <strong>{{ summary.claimed }}</strong></li>
 </ul>
+<button type="button" class="btn" data-share data-text="{{ user.name }} has {{ summary.awarded }} stars awarded this week">Share</button>
 {% if summary.unclaimed %}
 <form method="post" action="/stars/claim">
   <button class="btn gold" type="submit">Claim {{ summary.unclaimed }}</button>
